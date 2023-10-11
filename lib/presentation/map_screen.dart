@@ -12,6 +12,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   late final YandexMapController _mapController;
+  var _mapZoom = 0.0;
 
   @override
   void dispose() {
@@ -39,6 +40,11 @@ class _MapScreenState extends State<MapScreen> {
             ),
           );
         },
+        onCameraPositionChanged: (cameraPosition, _, __) {
+          setState(() {
+            _mapZoom = cameraPosition.zoom;
+          });
+        },
         mapObjects: [
           _getClusterizedCollection(
             placemarks: _getPlacemarkObjects(context),
@@ -46,6 +52,44 @@ class _MapScreenState extends State<MapScreen> {
         ],
       ),
     );
+  }
+
+  /// Метод для получения коллекции кластеризованных маркеров
+  ClusterizedPlacemarkCollection _getClusterizedCollection({
+    required List<PlacemarkMapObject> placemarks,
+  }) {
+    return ClusterizedPlacemarkCollection(
+        mapId: const MapObjectId('clusterized-1'),
+        placemarks: placemarks,
+        radius: 50,
+        minZoom: 15,
+        onClusterAdded: (self, cluster) async {
+          return cluster.copyWith(
+            appearance: cluster.appearance.copyWith(
+              opacity: 1.0,
+              icon: PlacemarkIcon.single(
+                PlacemarkIconStyle(
+                  image: BitmapDescriptor.fromBytes(
+                    await ClusterIconPainter(cluster.size)
+                        .getClusterIconBytes(),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+        onClusterTap: (self, cluster) async {
+          await _mapController.moveCamera(
+            animation: const MapAnimation(
+                type: MapAnimationType.linear, duration: 0.3),
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: cluster.placemarks.first.point,
+                zoom: _mapZoom + 1,
+              ),
+            ),
+          );
+        });
   }
 }
 
@@ -87,35 +131,6 @@ List<PlacemarkMapObject> _getPlacemarkObjects(BuildContext context) {
       .toList();
 }
 
-/// Метод для получения коллекции кластеризованных маркеров
-ClusterizedPlacemarkCollection _getClusterizedCollection({
-  required List<PlacemarkMapObject> placemarks,
-  YandexMapController? mapController,
-}) {
-  return ClusterizedPlacemarkCollection(
-      mapId: const MapObjectId('clusterized-1'),
-      placemarks: placemarks,
-      radius: 50,
-      minZoom: 15,
-      onClusterAdded: (self, cluster) async {
-        return cluster.copyWith(
-          appearance: cluster.appearance.copyWith(
-            opacity: 1.0,
-            icon: PlacemarkIcon.single(
-              PlacemarkIconStyle(
-                image: BitmapDescriptor.fromBytes(
-                  await ClusterIconPainter(cluster.size).getClusterIconBytes(),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-      onClusterTap: (self, cluster) async {
-        await mapController?.moveCamera(CameraUpdate.zoomIn());
-      });
-}
-
 /// Содержимое модального окна с информацией о точке на карте
 class _ModalBodyView extends StatelessWidget {
   const _ModalBodyView({required this.point});
@@ -126,17 +141,20 @@ class _ModalBodyView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 40),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(point.name, style: const TextStyle(fontSize: 20)),
-        const SizedBox(height: 20),
-        Text(
-          '${point.latitude}, ${point.longitude}',
-          style: const TextStyle(
-            fontSize: 16,
-            color: Colors.grey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(point.name, style: const TextStyle(fontSize: 20)),
+          const SizedBox(height: 20),
+          Text(
+            '${point.latitude}, ${point.longitude}',
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }

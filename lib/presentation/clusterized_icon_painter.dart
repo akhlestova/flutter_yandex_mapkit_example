@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 class ClusterIconPainter {
   const ClusterIconPainter(this.clusterSize);
 
+  /// Количество маркеров в кластере
   final int clusterSize;
 
   /// Метод, который формирует фигуру кластера
