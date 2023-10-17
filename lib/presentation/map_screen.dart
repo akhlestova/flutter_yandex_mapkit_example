@@ -34,7 +34,7 @@ class _MapScreenState extends State<MapScreen> {
   DrivingResultWithSession? _drivingResultWithSession;
 
   /// Список объектов линий на карте, которые отображают маршруты
-  List<MapObject> _drivingMapLines = [];
+  List<PolylineMapObject> _drivingMapLines = [];
 
   @override
   void dispose() {
