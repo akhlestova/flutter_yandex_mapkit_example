@@ -3,6 +3,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
 import 'package:yandex_mapkit_demo/data/map_point.dart';
 import 'package:yandex_mapkit_demo/presentation/clusterized_icon_painter.dart';
+import 'package:yandex_mapkit_demo/presentation/settings_screen.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -12,10 +13,17 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  /// Контроллер для управления картами
   late final YandexMapController _mapController;
+
+  /// Значение текущего масштаба карты
   var _mapZoom = 0.0;
 
+  /// Данные о местоположении пользователя
   CameraPosition? _userLocation;
+
+  /// Список точек на карте, по которым строится выделенная область
+  List<Point>? _polygonPointsList;
 
   @override
   void dispose() {
@@ -26,7 +34,26 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Yandex Mapkit Demo')),
+      appBar: AppBar(
+        title: const Text('Yandex Mapkit Demo'),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              _polygonPointsList = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+              setState(() {});
+            },
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
       body: YandexMap(
         onMapCreated: (controller) async {
           _mapController = controller;
@@ -41,6 +68,7 @@ class _MapScreenState extends State<MapScreen> {
           _getClusterizedCollection(
             placemarks: _getPlacemarkObjects(context),
           ),
+          _getPolygonMapObject(context, points: _polygonPointsList ?? []),
         ],
         onUserLocationAdded: (view) async {
           // получаем местоположение пользователя
@@ -163,6 +191,37 @@ List<PlacemarkMapObject> _getPlacemarkObjects(BuildContext context) {
         ),
       )
       .toList();
+}
+
+/// Метод для генерации объекта выделенной зоны на карте
+PolygonMapObject _getPolygonMapObject(
+  BuildContext context, {
+  required List<Point> points,
+}) {
+  return PolygonMapObject(
+    mapId: const MapObjectId('polygon map object'),
+    polygon: Polygon(
+      // внешняя линия зоны
+      outerRing: LinearRing(
+        points: points,
+      ),
+      // внутренняя линия зоны, которая формирует пропуски в полигоне
+      innerRings: const [],
+    ),
+    strokeColor: Colors.blue,
+    strokeWidth: 3.0,
+    fillColor: Colors.blue.withOpacity(0.2),
+    onTap: (_, point) => showModalBottomSheet(
+      context: context,
+      builder: (context) => _ModalBodyView(
+        point: MapPoint(
+          name: 'Неизвестный населенный пункт',
+          latitude: point.latitude,
+          longitude: point.longitude,
+        ),
+      ),
+    ),
+  );
 }
 
 /// Содержимое модального окна с информацией о точке на карте
