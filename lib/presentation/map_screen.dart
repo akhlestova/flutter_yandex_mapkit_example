@@ -83,6 +83,8 @@ class _MapScreenState extends State<MapScreen> {
               _drivingPointsList.add(argument);
             } else {
               _drivingPointsList = [];
+              _drivingMapLines = [];
+              _drivingResultWithSession = null;
             }
 
             // когда выбраны точки начала и конца,
@@ -92,10 +94,9 @@ class _MapScreenState extends State<MapScreen> {
                 startPoint: _drivingPointsList.first,
                 endPoint: _drivingPointsList.last,
               );
-             
             }
           });
-          
+
           _buildRoutes();
         },
         mapObjects: [
